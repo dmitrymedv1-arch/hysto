@@ -74,7 +74,7 @@ def normalize_data(all_datasets, norm_type):
     
     return normalized_datasets
 
-# Функция для создания смещенных данных
+# Функция для создания смещенных данных (ИСПРАВЛЕННАЯ)
 def create_shifted_datasets(all_datasets, shift_offset_value):
     """Создает смещенные наборы данных для наглядного отображения"""
     shifted_datasets = []
@@ -88,11 +88,13 @@ def create_shifted_datasets(all_datasets, shift_offset_value):
             else:
                 normalized_y = y_vals
             
-            # Смещаем по Y
-            shifted_y = normalized_y + i * shift_offset_value
-            shifted_datasets.append((x_vals, shifted_y))
+            # Смещаем по Y с сохранением нулевой линии смещения
+            # У каждого набора своя нулевая линия на уровне i * shift_offset_value
+            base_line = i * shift_offset_value
+            shifted_y = normalized_y + base_line
+            shifted_datasets.append((x_vals, shifted_y, base_line))
         else:
-            shifted_datasets.append((x_vals, y_vals))
+            shifted_datasets.append((x_vals, y_vals, i * shift_offset_value))
     
     return shifted_datasets
 
@@ -160,7 +162,12 @@ def get_y_range(all_datasets, zero_baseline=False, is_bar_chart=False):
         return 0, 1
     
     all_y_values = []
-    for x_vals, y_vals in all_datasets:
+    for dataset in all_datasets:
+        if len(dataset) == 3:  # Для смещенных данных с base_line
+            x_vals, y_vals, _ = dataset
+        else:  # Для обычных данных
+            x_vals, y_vals = dataset
+            
         if len(y_vals) > 0:
             all_y_values.extend(y_vals)
     
@@ -388,24 +395,8 @@ def main():
     # Создаем табы для каждого набора данных
     tabs = st.tabs([f"Набор {i+1}" for i in range(num_datasets)])
     
-    # Примеры данных по умолчанию
-    default_data_examples = [
-        """73.6779\t4875.44
-72.0213\t4636.07
-70.3644\t4562.76
-68.7072\t4411.03
-67.0497\t4452.43""",
-        """214.973\t3587.09
-213.343\t3595.62
-211.713\t3627.15
-210.082\t3746.06
-208.452\t3677.9
-206.821\t3805.96
-205.189\t3865.01
-203.558\t3681.94
-201.926\t3754.78
-200.294\t3893.45"""
-    ]
+    # Пустые данные по умолчанию (ИСПРАВЛЕНО)
+    default_data_examples = [""] * 10
     
     for i, tab in enumerate(tabs):
         with tab:
@@ -440,22 +431,47 @@ def main():
                 st.session_state.line_styles[i] = line_style
             
             with col4:
-                # Маркер
-                marker_style = st.selectbox(
+                # Маркер (ИСПРАВЛЕНО обозначение)
+                marker_options = {
+                    'none': 'Нет маркера',
+                    'o': 'Круг',
+                    's': 'Квадрат',
+                    'D': 'Ромб',
+                    '^': 'Треугольник вверх',
+                    'v': 'Треугольник вниз',
+                    'p': 'Пятиугольник',
+                    '*': 'Звезда',
+                    'h': 'Шестиугольник',
+                    '8': 'Восьмиугольник',
+                    'P': 'Заполненный плюс',
+                    'X': 'Заполненный крест'
+                }
+                
+                marker_keys = list(marker_options.keys())
+                marker_labels = list(marker_options.values())
+                
+                # Определяем текущий индекс
+                current_marker = st.session_state.marker_styles[i]
+                current_index = marker_keys.index(current_marker) if current_marker in marker_keys else 0
+                
+                marker_style_label = st.selectbox(
                     f"Маркер {i+1}",
-                    options=['none', 'o', '^', 'v', 's', 'D', 'p', '*', 'h', '8', 'P', 'X'],
-                    index=['none', 'o', '^', 'v', 's', 'D', 'p', '*', 'h', '8', 'P', 'X'].index(st.session_state.marker_styles[i]),
-                    key=f"marker_style_{i}"
+                    options=marker_labels,
+                    index=current_index,
+                    key=f"marker_style_label_{i}"
                 )
-                st.session_state.marker_styles[i] = marker_style
+                
+                # Сохраняем ключ маркера
+                selected_index = marker_labels.index(marker_style_label)
+                st.session_state.marker_styles[i] = marker_keys[selected_index]
             
-            # Поле для ввода данных
-            default_data = default_data_examples[0] if i == 0 else default_data_examples[1] if i == 1 else ""
+            # Поле для ввода данных (ИСПРАВЛЕНО - пустое по умолчанию)
             data_text = st.text_area(
                 f"Данные набора {i+1} (формат: X Y в каждой строке)",
-                value=st.session_state.datasets_data[i] or default_data,
+                value=st.session_state.datasets_data[i],
                 height=150,
-                key=f"data_text_{i}"
+                key=f"data_text_{i}",
+                placeholder="Введите данные в формате:\n10.0 20.5\n15.0 30.2\n20.0 25.7\n\nИли:\n10.0\t20.5\n15.0\t30.2\n20.0\t25.7"
             )
             st.session_state.datasets_data[i] = data_text
     
@@ -489,7 +505,11 @@ def main():
     
     # Получаем нормированные и смещенные данные
     norm_datasets = normalize_data(all_datasets, normalization_type)
-    shifted_datasets = create_shifted_datasets(all_datasets, shift_offset)
+    shifted_datasets_with_base = create_shifted_datasets(all_datasets, shift_offset)
+    
+    # Разделяем смещенные данные на данные и базовые линии
+    shifted_datasets = [(x_vals, y_vals) for x_vals, y_vals, _ in shifted_datasets_with_base]
+    base_lines = [base_line for _, _, base_line in shifted_datasets_with_base]
     
     # Определяем общий диапазон X
     all_x_values = []
@@ -687,7 +707,7 @@ def main():
     if len(norm_datasets) == 1:
         ax4.legend(fontsize=font_size - 2, loc='best')
     
-    # График 5: Смещенные нормированные столбцы
+    # График 5: Смещенные нормированные столбцы (ИСПРАВЛЕННЫЙ)
     for idx, (x_vals, y_vals) in enumerate(shifted_datasets):
         if len(x_vals) > 0 and len(y_vals) > 0:
             sorted_indices = np.argsort(x_vals)
@@ -699,13 +719,18 @@ def main():
             else:
                 width = bar_width
             
-            ax5.bar(x_sorted, y_sorted, 
+            # Рисуем столбцы от базовой линии
+            ax5.bar(x_sorted, y_sorted - base_lines[idx], 
                    width=width,
+                   bottom=base_lines[idx],  # Указываем базовую линию
                    alpha=bar_alpha, 
                    color=all_colors[idx],
                    edgecolor='black', 
                    linewidth=1,
                    label=all_names[idx])
+            
+            # Рисуем базовую линию для наглядности
+            ax5.axhline(y=base_lines[idx], color=all_colors[idx], linestyle='--', alpha=0.5, linewidth=1)
     
     y_min_5, y_max_5 = get_y_range(shifted_datasets, is_bar_chart=False)
     if manual_range and st.session_state.get('y_min', 0) != st.session_state.get('y_max', 0):
@@ -720,7 +745,7 @@ def main():
     if len(shifted_datasets) > 0:
         ax5.legend(fontsize=font_size - 2, loc='best')
     
-    # График 6: Смещенные нормированные кривые
+    # График 6: Смещенные нормированные кривые (ИСПРАВЛЕННЫЙ)
     for idx, (x_vals, y_vals) in enumerate(shifted_datasets):
         if len(x_vals) > 3 and len(y_vals) > 3:
             if smooth_zero_baseline:
@@ -738,7 +763,11 @@ def main():
                         alpha=0.9,
                         label=all_names[idx] if len(shifted_datasets) == 1 else None)
                 
-                ax6.fill_between(x_smooth, y_smooth, alpha=0.2, color=all_colors[idx])
+                # Заполнение от базовой линии
+                ax6.fill_between(x_smooth, base_lines[idx], y_smooth, alpha=0.2, color=all_colors[idx])
+                
+                # Рисуем базовую линию для наглядности
+                ax6.axhline(y=base_lines[idx], color=all_colors[idx], linestyle='--', alpha=0.5, linewidth=1)
                 
                 if all_marker_styles[idx] != 'none':
                     ax6.scatter(x_sorted, y_sorted,
@@ -804,6 +833,12 @@ def main():
         - **Сглаженные графики от нуля**: при включении добавляются крайние точки с нулевыми значениями
         - **Нормировка**: можно нормировать по общему максимуму или по максимуму в каждом наборе
         - **Смещение**: позволяет визуально разделить несколько наборов данных
+        - **Базовые линии**: на смещенных графиках показаны базовые линии каждого набора
+        
+        ### Формат ввода данных:
+        - Каждая строка должна содержать два числа: X и Y
+        - Разделитель: пробел, табуляция или запятая
+        - Пример: `10.0 20.5` или `10.0\t20.5` или `10.0, 20.5`
         """)
 
 if __name__ == "__main__":
