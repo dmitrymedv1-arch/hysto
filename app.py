@@ -501,7 +501,7 @@ def main():
                 dataset_name = st.text_input(
                     f"Имя набора {i+1}",
                     value=st.session_state.dataset_names[i],
-                    key=f"dataset_name_{i}"
+                    key=f"dataset_name_{num_datasets}_{i}"
                 )
                 st.session_state.dataset_names[i] = dataset_name
             
@@ -510,7 +510,7 @@ def main():
                 color = st.color_picker(
                     f"Цвет {i+1}",
                     value=st.session_state.dataset_colors[i],
-                    key=f"dataset_color_{i}"
+                    key=f"dataset_color_{num_datasets}_{i}"
                 )
                 st.session_state.dataset_colors[i] = color
             
@@ -520,7 +520,7 @@ def main():
                     f"Стиль линии {i+1}",
                     options=['solid', 'dashed', 'dotted', 'dashdot'],
                     index=['solid', 'dashed', 'dotted', 'dashdot'].index(st.session_state.line_styles[i]),
-                    key=f"line_style_{i}"
+                    key=f"line_style_{num_datasets}_{i}"
                 )
                 st.session_state.line_styles[i] = line_style
             
@@ -552,7 +552,7 @@ def main():
                     f"Маркер {i+1}",
                     options=marker_labels,
                     index=current_index,
-                    key=f"marker_style_label_{i}"
+                    key=f"marker_style_label_{num_datasets}_{i}"
                 )
                 
                 # Сохраняем ключ маркера
@@ -564,7 +564,7 @@ def main():
                 f"Данные набора {i+1} (формат: X Y в каждой строке)",
                 value=st.session_state.datasets_data[i],
                 height=150,
-                key=f"data_text_{i}",
+                key=f"data_text_{num_datasets}_{i}",
                 placeholder="Введите данные в формате:\n10.0 20.5\n15.0 30.2\n20.0 25.7\n\nИли:\n10.0\t20.5\n15.0\t30.2\n20.0\t25.7"
             )
             st.session_state.datasets_data[i] = data_text
@@ -974,3 +974,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
