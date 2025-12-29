@@ -38,7 +38,7 @@ def parse_data(data_text):
     
     return np.array(x_values), np.array(y_values)
 
-# Функция для нормировки данных (ИСПРАВЛЕННАЯ - для правильной работы со сглаженными графиками)
+# Функция для нормировки данных
 def normalize_data(all_datasets, norm_type):
     """Нормирует данные в соответствии с выбранным типом"""
     if norm_type == 'Без нормировки' or not all_datasets:
@@ -74,7 +74,7 @@ def normalize_data(all_datasets, norm_type):
     
     return normalized_datasets
 
-# Функция для создания смещенных данных (ИСПРАВЛЕННАЯ)
+# Функция для создания смещенных данных
 def create_shifted_datasets(all_datasets, shift_offset_value):
     """Создает смещенные наборы данных для наглядного отображения"""
     shifted_datasets = []
@@ -89,7 +89,6 @@ def create_shifted_datasets(all_datasets, shift_offset_value):
                 normalized_y = y_vals
             
             # Смещаем по Y с сохранением нулевой линии смещения
-            # У каждого набора своя нулевая линия на уровне i * shift_offset_value
             base_line = i * shift_offset_value
             shifted_y = normalized_y + base_line
             shifted_datasets.append((x_vals, shifted_y, base_line))
@@ -132,7 +131,7 @@ def prepare_smooth_data_with_zero_baseline(x_vals, y_vals, smooth_sigma_value):
     
     return x_sorted, y_sorted, x_smooth, y_smooth_cropped
 
-# Функция для подготовки данных для обычных сглаженных графиков (ИСПРАВЛЕННАЯ - работает для 2+ наборов)
+# Функция для подготовки данных для обычных сглаженных графиков
 def prepare_smooth_data(x_vals, y_vals, smooth_sigma_value):
     """Подготавливает данные для обычного сглаживания"""
     if len(x_vals) < 2 or len(y_vals) < 2:
@@ -150,7 +149,7 @@ def prepare_smooth_data(x_vals, y_vals, smooth_sigma_value):
     try:
         f_linear = interp1d(x_sorted, y_sorted, kind='linear', fill_value='extrapolate')
         y_dense = f_linear(x_dense)
-    except Exception as e:
+    except Exception:
         # Если интерполяция не удалась, используем ближайшие значения
         f_nearest = interp1d(x_sorted, y_sorted, kind='nearest', fill_value='extrapolate')
         y_dense = f_nearest(x_dense)
@@ -160,7 +159,7 @@ def prepare_smooth_data(x_vals, y_vals, smooth_sigma_value):
     
     return x_sorted, y_sorted, x_dense, y_smooth
 
-# Функция для подготовки нормированных данных для сглаженных графиков (НОВАЯ)
+# Функция для подготовки нормированных данных для сглаженных графиков
 def prepare_normalized_smooth_data(x_vals, y_vals, smooth_sigma_value, norm_type, global_max=1):
     """Подготавливает нормированные данные для сглаживания"""
     if len(x_vals) < 2 or len(y_vals) < 2:
@@ -178,7 +177,7 @@ def prepare_normalized_smooth_data(x_vals, y_vals, smooth_sigma_value, norm_type
     try:
         f_linear = interp1d(x_sorted, y_sorted, kind='linear', fill_value='extrapolate')
         y_dense = f_linear(x_dense)
-    except Exception as e:
+    except Exception:
         # Если интерполяция не удалась, используем ближайшие значения
         f_nearest = interp1d(x_sorted, y_sorted, kind='nearest', fill_value='extrapolate')
         y_dense = f_nearest(x_dense)
@@ -186,7 +185,7 @@ def prepare_normalized_smooth_data(x_vals, y_vals, smooth_sigma_value, norm_type
     # Применяем гауссово сглаживание
     y_smooth = gaussian_filter1d(y_dense, sigma=smooth_sigma_value)
     
-    # Нормируем сглаженные данные (ИСПРАВЛЕНО - чтобы пик был равен 1)
+    # Нормируем сглаженные данные
     if norm_type == 'Нормировка по общему максимуму':
         if global_max > 0:
             y_smooth_normalized = y_smooth / global_max
@@ -250,8 +249,8 @@ def get_y_range(all_datasets, zero_baseline=False, is_bar_chart=False, auto_scal
         y_min = 0
         y_range = y_max - y_min
         y_max = y_max + 0.1 * y_range
-    elif not auto_scale:  # Для обычных сглаженных графиков без автоскейла (ИСПРАВЛЕНО)
-        y_min = min(0, y_min)  # Начинаем от минимума или 0, если минимум положительный
+    elif not auto_scale:  # Для обычных сглаженных графиков без автоскейла
+        y_min = min(0, y_min)
         y_range = y_max - y_min
         y_min = y_min - 0.05 * y_range
         y_max = y_max + 0.05 * y_range
@@ -273,16 +272,18 @@ def main():
         st.session_state.num_datasets = 1
     
     if 'datasets_data' not in st.session_state:
-        st.session_state.datasets_data = [""] * 10  # Максимум 10 наборов
+        st.session_state.datasets_data = [""] * 10
     
     if 'dataset_names' not in st.session_state:
         st.session_state.dataset_names = [f"Набор данных {i+1}" for i in range(10)]
     
     if 'dataset_colors' not in st.session_state:
-        st.session_state.dataset_colors = ['#1f77b4'] + [
-            f'#{int(255*(i+1)/10):02x}{int(128*(i+1)/10):02x}{int(64*(i+1)):02x}' 
-            for i in range(1, 10)
+        # Исправленная палитра цветов - все валидные hex-коды
+        default_colors = [
+            '#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd',
+            '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf'
         ]
+        st.session_state.dataset_colors = default_colors
     
     if 'line_styles' not in st.session_state:
         st.session_state.line_styles = ['solid'] * 10
@@ -399,7 +400,6 @@ def main():
             key="bar_alpha"
         )
         
-        # Виджет для границ столбцов (НОВЫЙ)
         show_bar_border = st.checkbox(
             "Показать границы столбцов",
             value=True,
@@ -458,7 +458,6 @@ def main():
         st.markdown("---")
         st.header("⬆️ Настройки смещения")
         
-        # Смещение от 0 до 3 (ИСПРАВЛЕНО)
         shift_offset = st.slider(
             "Смещение наборов",
             min_value=0.0,
@@ -501,16 +500,16 @@ def main():
                 dataset_name = st.text_input(
                     f"Имя набора {i+1}",
                     value=st.session_state.dataset_names[i],
-                    key=f"dataset_name_{num_datasets}_{i}"
+                    key=f"dataset_name_{i}"
                 )
                 st.session_state.dataset_names[i] = dataset_name
             
             with col2:
-                # Цвет
+                # Цвет - используем фиксированный ключ
                 color = st.color_picker(
                     f"Цвет {i+1}",
                     value=st.session_state.dataset_colors[i],
-                    key=f"dataset_color_{num_datasets}_{i}"
+                    key=f"color_{i}"
                 )
                 st.session_state.dataset_colors[i] = color
             
@@ -520,7 +519,7 @@ def main():
                     f"Стиль линии {i+1}",
                     options=['solid', 'dashed', 'dotted', 'dashdot'],
                     index=['solid', 'dashed', 'dotted', 'dashdot'].index(st.session_state.line_styles[i]),
-                    key=f"line_style_{num_datasets}_{i}"
+                    key=f"line_style_{i}"
                 )
                 st.session_state.line_styles[i] = line_style
             
@@ -544,7 +543,6 @@ def main():
                 marker_keys = list(marker_options.keys())
                 marker_labels = list(marker_options.values())
                 
-                # Определяем текущий индекс
                 current_marker = st.session_state.marker_styles[i]
                 current_index = marker_keys.index(current_marker) if current_marker in marker_keys else 0
                 
@@ -552,10 +550,9 @@ def main():
                     f"Маркер {i+1}",
                     options=marker_labels,
                     index=current_index,
-                    key=f"marker_style_label_{num_datasets}_{i}"
+                    key=f"marker_style_{i}"
                 )
                 
-                # Сохраняем ключ маркера
                 selected_index = marker_labels.index(marker_style_label)
                 st.session_state.marker_styles[i] = marker_keys[selected_index]
             
@@ -564,7 +561,7 @@ def main():
                 f"Данные набора {i+1} (формат: X Y в каждой строке)",
                 value=st.session_state.datasets_data[i],
                 height=150,
-                key=f"data_text_{num_datasets}_{i}",
+                key=f"data_text_{i}",
                 placeholder="Введите данные в формате:\n10.0 20.5\n15.0 30.2\n20.0 25.7\n\nИли:\n10.0\t20.5\n15.0\t30.2\n20.0\t25.7"
             )
             st.session_state.datasets_data[i] = data_text
@@ -622,10 +619,19 @@ def main():
     else:
         x_min, x_max = 0, 1
     
+    # Находим общий максимум для нормировки
+    global_max = 0
+    if normalization_type == 'Нормировка по общему максимуму':
+        for x_vals, y_vals in all_datasets:
+            if len(y_vals) > 0:
+                dataset_max = np.max(y_vals)
+                if dataset_max > global_max:
+                    global_max = dataset_max
+    
     # Создаем графики
     st.header("📈 Графики")
     
-    # Создаем 6 графиков в виде колонок
+    # Создаем 6 графиков
     fig1, ax1 = plt.subplots(figsize=(10, 6))
     fig2, ax2 = plt.subplots(figsize=(10, 6))
     fig3, ax3 = plt.subplots(figsize=(10, 6))
@@ -647,15 +653,6 @@ def main():
     for ax in axes:
         ax.set_facecolor(fill_color)
     
-    # Находим общий максимум для нормировки (ИСПРАВЛЕНО - для правильной работы со сглаживанием)
-    global_max = 0
-    if normalization_type == 'Нормировка по общему максимуму':
-        for x_vals, y_vals in all_datasets:
-            if len(y_vals) > 0:
-                dataset_max = np.max(y_vals)
-                if dataset_max > global_max:
-                    global_max = dataset_max
-    
     # График 1: Столбчатая диаграмма X-Y
     for idx, (x_vals, y_vals) in enumerate(all_datasets):
         if len(x_vals) > 0 and len(y_vals) > 0:
@@ -668,7 +665,6 @@ def main():
             else:
                 width = bar_width
             
-            # Настройки границ столбцов
             edgecolor = bar_border_color if show_bar_border else 'none'
             linewidth = bar_border_width if show_bar_border else 0
             
@@ -686,7 +682,6 @@ def main():
     else:
         ax1.set_ylim(y_min_1, y_max_1)
     
-    # Используем переименованные оси для всех графиков (ИСПРАВЛЕНО)
     ax1.set_xlabel(x_label, fontsize=font_size)
     ax1.set_ylabel(y_label, fontsize=font_size)
     ax1.set_title(titles[0], fontsize=font_size + 2, pad=20)
@@ -694,9 +689,9 @@ def main():
     if len(all_datasets) > 1:
         ax1.legend(fontsize=font_size - 2, loc='best')
     
-    # График 2: Сглаженный график с заливкой (ИСПРАВЛЕН - работает для 2+ наборов)
+    # График 2: Сглаженный график с заливкой
     for idx, (x_vals, y_vals) in enumerate(all_datasets):
-        if len(x_vals) >= 2 and len(y_vals) >= 2:  # Изменено с >3 на >=2
+        if len(x_vals) >= 2 and len(y_vals) >= 2:
             if smooth_zero_baseline:
                 x_sorted, y_sorted, x_smooth, y_smooth = prepare_smooth_data_with_zero_baseline(
                     x_vals, y_vals, smooth_sigma)
@@ -728,11 +723,9 @@ def main():
     if manual_range and st.session_state.get('y_min', 0) != st.session_state.get('y_max', 0):
         ax2.set_ylim(st.session_state.y_min, st.session_state.y_max)
     else:
-        # Исправлено - не начинаем от нуля если auto_scale_y выключен
         if not auto_scale_y:
             ax2.set_ylim(y_min_2, y_max_2)
         else:
-            # Автоскейл - начинаем от нуля только если минимум близок к нулю
             if y_min_2 > 0 and y_min_2 < 0.1 * y_max_2:
                 ax2.set_ylim(0, y_max_2 * 1.1)
             else:
@@ -757,7 +750,6 @@ def main():
             else:
                 width = bar_width
             
-            # Настройки границ столбцов
             edgecolor = bar_border_color if show_bar_border else 'none'
             linewidth = bar_border_width if show_bar_border else 0
             
@@ -784,10 +776,9 @@ def main():
     if len(norm_datasets) > 1:
         ax3.legend(fontsize=font_size - 2, loc='best')
     
-    # График 4: Нормированный сглаженный график (ИСПРАВЛЕН - правильная нормировка)
+    # График 4: Нормированный сглаженный график
     for idx, (x_vals, y_vals) in enumerate(all_datasets):
-        if len(x_vals) >= 2 and len(y_vals) >= 2:  # Изменено с >3 на >=2
-            # Используем новую функцию для нормированных сглаженных данных
+        if len(x_vals) >= 2 and len(y_vals) >= 2:
             x_sorted, y_sorted_norm, x_smooth, y_smooth_norm = prepare_normalized_smooth_data(
                 x_vals, y_vals, smooth_sigma, normalization_type, global_max)
             
@@ -799,7 +790,6 @@ def main():
                         alpha=0.9,
                         label=all_names[idx])
                 
-                # Заполнение от нуля для нормированных данных
                 ax4.fill_between(x_smooth, 0, y_smooth_norm, alpha=0.2, color=all_colors[idx])
                 
                 if all_marker_styles[idx] != 'none' and len(x_sorted) > 0:
@@ -812,7 +802,6 @@ def main():
                               linewidths=0.5,
                               zorder=5)
     
-    # Определяем диапазон Y для нормированного графика
     if normalization_type != 'Без нормировки':
         y_min_4, y_max_4 = 0, 1.2
     else:
@@ -842,21 +831,18 @@ def main():
             else:
                 width = bar_width
             
-            # Настройки границ столбцов
             edgecolor = bar_border_color if show_bar_border else 'none'
             linewidth = bar_border_width if show_bar_border else 0
             
-            # Рисуем столбцы от базовой линии
             ax5.bar(x_sorted, y_sorted - base_lines[idx], 
                    width=width,
-                   bottom=base_lines[idx],  # Указываем базовую линию
+                   bottom=base_lines[idx],
                    alpha=bar_alpha, 
                    color=all_colors[idx],
                    edgecolor=edgecolor, 
                    linewidth=linewidth,
                    label=all_names[idx])
             
-            # Рисуем базовую линию для наглядности
             ax5.axhline(y=base_lines[idx], color=all_colors[idx], linestyle='--', alpha=0.5, linewidth=1)
     
     y_min_5, y_max_5 = get_y_range(shifted_datasets, is_bar_chart=False)
@@ -874,13 +860,11 @@ def main():
     
     # График 6: Смещенные нормированные кривые
     for idx, (x_vals, y_vals) in enumerate(all_datasets):
-        if len(x_vals) >= 2 and len(y_vals) >= 2:  # Изменено с >3 на >=2
-            # Подготавливаем нормированные сглаженные данные
+        if len(x_vals) >= 2 and len(y_vals) >= 2:
             x_sorted, y_sorted_norm, x_smooth, y_smooth_norm = prepare_normalized_smooth_data(
                 x_vals, y_vals, smooth_sigma, 'Нормировка по максимуму в наборе')
             
             if len(x_smooth) > 0 and len(y_smooth_norm) > 0:
-                # Добавляем смещение
                 y_smooth_shifted = y_smooth_norm + base_lines[idx]
                 
                 ax6.plot(x_smooth, y_smooth_shifted,
@@ -890,14 +874,11 @@ def main():
                         alpha=0.9,
                         label=all_names[idx])
                 
-                # Заполнение от базовой линии
                 ax6.fill_between(x_smooth, base_lines[idx], y_smooth_shifted, alpha=0.2, color=all_colors[idx])
                 
-                # Рисуем базовую линию для наглядности
                 ax6.axhline(y=base_lines[idx], color=all_colors[idx], linestyle='--', alpha=0.5, linewidth=1)
                 
                 if all_marker_styles[idx] != 'none' and len(x_sorted) > 0:
-                    # Добавляем смещение к маркерам
                     y_markers_shifted = y_sorted_norm + base_lines[idx]
                     ax6.scatter(x_sorted, y_markers_shifted,
                               s=marker_size,
@@ -974,4 +955,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
