@@ -39,38 +39,38 @@ def parse_data(data_text):
     return np.array(x_values), np.array(y_values)
 
 # Функция для нормировки данных
-def normalize_data(all_datasets, norm_type):
+def normalize_data(all_datasets, normalization_type):
     """Нормирует данные в соответствии с выбранным типом"""
-    if norm_type == 'Без нормировки' or not all_datasets:
+    if normalization_type == 'Без нормировки' or not all_datasets:
         return all_datasets
     
     normalized_datasets = []
     
-    if norm_type == 'Нормировка по общему максимуму':
+    if normalization_type == 'Нормировка по общему максимуму':
         # Находим общий максимум среди всех данных
-        global_max = 0
-        for x_vals, y_vals in all_datasets:
-            if len(y_vals) > 0:
-                dataset_max = np.max(y_vals)
-                if dataset_max > global_max:
-                    global_max = dataset_max
+        global_maximum = 0
+        for x_values, y_values in all_datasets:
+            if len(y_values) > 0:
+                dataset_maximum = np.max(y_values)
+                if dataset_maximum > global_maximum:
+                    global_maximum = dataset_maximum
         
-        if global_max > 0:
-            for x_vals, y_vals in all_datasets:
-                normalized_y = y_vals / global_max
-                normalized_datasets.append((x_vals, normalized_y))
+        if global_maximum > 0:
+            for x_values, y_values in all_datasets:
+                normalized_y = y_values / global_maximum
+                normalized_datasets.append((x_values, normalized_y))
         else:
             return all_datasets
     
-    elif norm_type == 'Нормировка по максимуму в наборе':
-        for x_vals, y_vals in all_datasets:
-            if len(y_vals) > 0:
-                dataset_max = np.max(y_vals)
-                if dataset_max > 0:
-                    normalized_y = y_vals / dataset_max
-                    normalized_datasets.append((x_vals, normalized_y))
+    elif normalization_type == 'Нормировка по максимуму в наборе':
+        for x_values, y_values in all_datasets:
+            if len(y_values) > 0:
+                dataset_maximum = np.max(y_values)
+                if dataset_maximum > 0:
+                    normalized_y = y_values / dataset_maximum
+                    normalized_datasets.append((x_values, normalized_y))
                 else:
-                    normalized_datasets.append((x_vals, y_vals))
+                    normalized_datasets.append((x_values, y_values))
     
     return normalized_datasets
 
@@ -79,34 +79,43 @@ def create_shifted_datasets(all_datasets, shift_offset_value):
     """Создает смещенные наборы данных для наглядного отображения"""
     shifted_datasets = []
     
-    for i, (x_vals, y_vals) in enumerate(all_datasets):
-        if len(y_vals) > 0:
+    for index, (x_values, y_values) in enumerate(all_datasets):
+        if len(y_values) > 0:
             # Нормируем по максимуму в наборе
-            dataset_max = np.max(y_vals)
-            if dataset_max > 0:
-                normalized_y = y_vals / dataset_max
+            dataset_maximum = np.max(y_values)
+            if dataset_maximum > 0:
+                normalized_y = y_values / dataset_maximum
             else:
-                normalized_y = y_vals
+                normalized_y = y_values
+            
+            # Первый набор начинается с y = 0, остальные смещаются
+            if index == 0:
+                base_line = 0
+            else:
+                base_line = (index - 1) * shift_offset_value + shift_offset_value
             
             # Смещаем по Y с сохранением нулевой линии смещения
-            base_line = i * shift_offset_value
             shifted_y = normalized_y + base_line
-            shifted_datasets.append((x_vals, shifted_y, base_line))
+            shifted_datasets.append((x_values, shifted_y, base_line))
         else:
-            shifted_datasets.append((x_vals, y_vals, i * shift_offset_value))
+            if index == 0:
+                base_line = 0
+            else:
+                base_line = (index - 1) * shift_offset_value + shift_offset_value
+            shifted_datasets.append((x_values, y_values, base_line))
     
     return shifted_datasets
 
 # Функция для подготовки данных для сглаженных графиков с нулевой базой
-def prepare_smooth_data_with_zero_baseline(x_vals, y_vals, smooth_sigma_value):
+def prepare_smooth_data_with_zero_baseline(x_values, y_values, smooth_sigma_value):
     """Подготавливает данные для сглаживания с добавлением крайних нулевых точек"""
-    if len(x_vals) < 2 or len(y_vals) < 2:
-        return x_vals, y_vals, np.array([]), np.array([])
+    if len(x_values) < 2 or len(y_values) < 2:
+        return x_values, y_values, np.array([]), np.array([])
     
     # Сортируем по X
-    sorted_indices = np.argsort(x_vals)
-    x_sorted = x_vals[sorted_indices]
-    y_sorted = y_vals[sorted_indices]
+    sorted_indices = np.argsort(x_values)
+    x_sorted = x_values[sorted_indices]
+    y_sorted = y_values[sorted_indices]
     
     # Добавляем крайние точки с нулевыми значениями
     x_extended = np.concatenate([[x_sorted[0] - 0.1 * (x_sorted[-1] - x_sorted[0])], 
@@ -132,15 +141,15 @@ def prepare_smooth_data_with_zero_baseline(x_vals, y_vals, smooth_sigma_value):
     return x_sorted, y_sorted, x_smooth, y_smooth_cropped
 
 # Функция для подготовки данных для обычных сглаженных графиков
-def prepare_smooth_data(x_vals, y_vals, smooth_sigma_value):
+def prepare_smooth_data(x_values, y_values, smooth_sigma_value):
     """Подготавливает данные для обычного сглаживания"""
-    if len(x_vals) < 2 or len(y_vals) < 2:
-        return x_vals, y_vals, np.array([]), np.array([])
+    if len(x_values) < 2 or len(y_values) < 2:
+        return x_values, y_values, np.array([]), np.array([])
     
     # Сортируем по X
-    sorted_indices = np.argsort(x_vals)
-    x_sorted = x_vals[sorted_indices]
-    y_sorted = y_vals[sorted_indices]
+    sorted_indices = np.argsort(x_values)
+    x_sorted = x_values[sorted_indices]
+    y_sorted = y_values[sorted_indices]
     
     # Создаем плотную сетку для сглаженной линии
     x_dense = np.linspace(x_sorted[0], x_sorted[-1], 200)
@@ -160,15 +169,15 @@ def prepare_smooth_data(x_vals, y_vals, smooth_sigma_value):
     return x_sorted, y_sorted, x_dense, y_smooth
 
 # Функция для подготовки нормированных данных для сглаженных графиков
-def prepare_normalized_smooth_data(x_vals, y_vals, smooth_sigma_value, norm_type, global_max=1):
+def prepare_normalized_smooth_data(x_values, y_values, smooth_sigma_value, normalization_type, global_maximum=1):
     """Подготавливает нормированные данные для сглаживания"""
-    if len(x_vals) < 2 or len(y_vals) < 2:
-        return x_vals, y_vals, np.array([]), np.array([])
+    if len(x_values) < 2 or len(y_values) < 2:
+        return x_values, y_values, np.array([]), np.array([])
     
     # Сортируем по X
-    sorted_indices = np.argsort(x_vals)
-    x_sorted = x_vals[sorted_indices]
-    y_sorted = y_vals[sorted_indices]
+    sorted_indices = np.argsort(x_values)
+    x_sorted = x_values[sorted_indices]
+    y_sorted = y_values[sorted_indices]
     
     # Создаем плотную сетку для сглаженной линии
     x_dense = np.linspace(x_sorted[0], x_sorted[-1], 200)
@@ -186,30 +195,30 @@ def prepare_normalized_smooth_data(x_vals, y_vals, smooth_sigma_value, norm_type
     y_smooth = gaussian_filter1d(y_dense, sigma=smooth_sigma_value)
     
     # Нормируем сглаженные данные
-    if norm_type == 'Нормировка по общему максимуму':
-        if global_max > 0:
-            y_smooth_normalized = y_smooth / global_max
+    if normalization_type == 'Нормировка по общему максимуму':
+        if global_maximum > 0:
+            y_smooth_normalized = y_smooth / global_maximum
         else:
             y_smooth_normalized = y_smooth
-    elif norm_type == 'Нормировка по максимуму в наборе':
-        y_smooth_max = np.max(y_smooth) if len(y_smooth) > 0 else 1
-        if y_smooth_max > 0:
-            y_smooth_normalized = y_smooth / y_smooth_max
+    elif normalization_type == 'Нормировка по максимуму в наборе':
+        y_smooth_maximum = np.max(y_smooth) if len(y_smooth) > 0 else 1
+        if y_smooth_maximum > 0:
+            y_smooth_normalized = y_smooth / y_smooth_maximum
         else:
             y_smooth_normalized = y_smooth
     else:
         y_smooth_normalized = y_smooth
     
     # Нормируем исходные точки для маркеров
-    if norm_type == 'Нормировка по общему максимуму':
-        if global_max > 0:
-            y_sorted_normalized = y_sorted / global_max
+    if normalization_type == 'Нормировка по общему максимуму':
+        if global_maximum > 0:
+            y_sorted_normalized = y_sorted / global_maximum
         else:
             y_sorted_normalized = y_sorted
-    elif norm_type == 'Нормировка по максимуму в наборе':
-        y_sorted_max = np.max(y_sorted) if len(y_sorted) > 0 else 1
-        if y_sorted_max > 0:
-            y_sorted_normalized = y_sorted / y_sorted_max
+    elif normalization_type == 'Нормировка по максимуму в наборе':
+        y_sorted_maximum = np.max(y_sorted) if len(y_sorted) > 0 else 1
+        if y_sorted_maximum > 0:
+            y_sorted_normalized = y_sorted / y_sorted_maximum
         else:
             y_sorted_normalized = y_sorted
     else:
@@ -226,41 +235,41 @@ def get_y_range(all_datasets, zero_baseline=False, is_bar_chart=False, auto_scal
     all_y_values = []
     for dataset in all_datasets:
         if len(dataset) == 3:  # Для смещенных данных с base_line
-            x_vals, y_vals, _ = dataset
+            x_values, y_values, _ = dataset
         else:  # Для обычных данных
-            x_vals, y_vals = dataset
+            x_values, y_values = dataset
             
-        if len(y_vals) > 0:
-            all_y_values.extend(y_vals)
+        if len(y_values) > 0:
+            all_y_values.extend(y_values)
     
     if not all_y_values:
         return 0, 1
     
-    y_min = np.min(all_y_values)
-    y_max = np.max(all_y_values)
+    y_minimum = np.min(all_y_values)
+    y_maximum = np.max(all_y_values)
     
     if is_bar_chart:
         # Для столбчатых диаграмм всегда от нуля
-        y_min = 0
-        y_range = y_max - y_min
-        y_max = y_max + 0.1 * y_range
+        y_minimum = 0
+        y_range = y_maximum - y_minimum
+        y_maximum = y_maximum + 0.1 * y_range
     elif zero_baseline:
         # Для сглаженных графиков с нулевой базой
-        y_min = 0
-        y_range = y_max - y_min
-        y_max = y_max + 0.1 * y_range
+        y_minimum = 0
+        y_range = y_maximum - y_minimum
+        y_maximum = y_maximum + 0.1 * y_range
     elif not auto_scale:  # Для обычных сглаженных графиков без автоскейла
-        y_min = min(0, y_min)
-        y_range = y_max - y_min
-        y_min = y_min - 0.05 * y_range
-        y_max = y_max + 0.05 * y_range
+        y_minimum = min(0, y_minimum)
+        y_range = y_maximum - y_minimum
+        y_minimum = y_minimum - 0.05 * y_range
+        y_maximum = y_maximum + 0.05 * y_range
     else:
         # Автоскейл для обычных сглаженных графиков
-        y_range = y_max - y_min
-        y_min = y_min - 0.05 * y_range
-        y_max = y_max + 0.1 * y_range
+        y_range = y_maximum - y_minimum
+        y_minimum = y_minimum - 0.05 * y_range
+        y_maximum = y_maximum + 0.1 * y_range
     
-    return y_min, y_max
+    return y_minimum, y_maximum
 
 # Основной интерфейс Streamlit
 def main():
@@ -268,8 +277,8 @@ def main():
     st.markdown("---")
     
     # Инициализация сессионных состояний
-    if 'num_datasets' not in st.session_state:
-        st.session_state.num_datasets = 1
+    if 'number_of_datasets' not in st.session_state:
+        st.session_state.number_of_datasets = 1
     
     if 'datasets_data' not in st.session_state:
         st.session_state.datasets_data = [""] * 10
@@ -291,239 +300,244 @@ def main():
     if 'marker_styles' not in st.session_state:
         st.session_state.marker_styles = ['none'] + ['o'] * 9
     
-    # Сайдбар с настройками
+    # Компактный сайдбар с настройками
     with st.sidebar:
-        st.header("⚙️ Настройки данных")
+        st.header("⚙️ Настройки")
         
         # Управление количеством наборов данных
-        num_datasets = st.slider(
+        number_of_datasets = st.slider(
             "Количество наборов данных",
             min_value=1,
             max_value=10,
-            value=st.session_state.num_datasets,
-            key="num_datasets_slider"
+            value=st.session_state.number_of_datasets,
+            key="number_of_datasets_slider"
         )
         
         # Обновляем количество наборов если изменилось
-        if num_datasets != st.session_state.num_datasets:
-            st.session_state.num_datasets = num_datasets
+        if number_of_datasets != st.session_state.number_of_datasets:
+            st.session_state.number_of_datasets = number_of_datasets
             st.rerun()
         
-        st.markdown("---")
-        st.header("🎨 Настройки графиков")
+        # Группировка настроек в аккордеоны
+        with st.expander("🎨 Внешний вид графиков", expanded=False):
+            fill_color = st.color_picker(
+                "Цвет фона графиков",
+                value="#ffffff",
+                key="fill_color"
+            )
+            
+            show_grid = st.checkbox(
+                "Показать сетку",
+                value=True,
+                key="show_grid"
+            )
+            
+            if show_grid:
+                grid_color = st.color_picker(
+                    "Цвет сетки",
+                    value="#cccccc",
+                    key="grid_color"
+                )
+                
+                grid_width = st.slider(
+                    "Толщина сетки",
+                    min_value=0.1,
+                    max_value=2.0,
+                    value=0.5,
+                    step=0.1,
+                    key="grid_width"
+                )
+            
+            line_width = st.slider(
+                "Толщина линии",
+                min_value=0.5,
+                max_value=5.0,
+                value=2.0,
+                step=0.5,
+                key="line_width"
+            )
+            
+            marker_size = st.slider(
+                "Размер маркеров",
+                min_value=10,
+                max_value=100,
+                value=50,
+                step=5,
+                key="marker_size"
+            )
+            
+            axis_width = st.slider(
+                "Толщина осей",
+                min_value=0.5,
+                max_value=3.0,
+                value=1.5,
+                step=0.5,
+                key="axis_width"
+            )
+            
+            font_size = st.slider(
+                "Размер шрифта заголовков",
+                min_value=10,
+                max_value=24,
+                value=14,
+                step=2,
+                key="font_size"
+            )
+            
+            x_label = st.text_input(
+                "Название оси X",
+                value="Ось X",
+                key="x_label"
+            )
+            
+            y_label = st.text_input(
+                "Название оси Y",
+                value="Ось Y",
+                key="y_label"
+            )
+            
+            graph_title = st.text_input(
+                "Заголовок графиков",
+                value="Анализ данных",
+                key="graph_title"
+            )
         
-        # Общие настройки
-        fill_color = st.color_picker(
-            "Цвет фона графиков",
-            value="#ffffff",
-            key="fill_color"
-        )
+        with st.expander("📏 Настройки столбчатых диаграмм", expanded=False):
+            bar_width = st.slider(
+                "Ширина столбцов",
+                min_value=0.1,
+                max_value=2.0,
+                value=0.8,
+                step=0.1,
+                key="bar_width"
+            )
+            
+            bar_alpha = st.slider(
+                "Прозрачность столбцов",
+                min_value=0.1,
+                max_value=1.0,
+                value=0.7,
+                step=0.1,
+                key="bar_alpha"
+            )
+            
+            show_bar_border = st.checkbox(
+                "Показать границы столбцов",
+                value=True,
+                key="show_bar_border"
+            )
+            
+            if show_bar_border:
+                bar_border_color = st.color_picker(
+                    "Цвет границ столбцов",
+                    value="#000000",
+                    key="bar_border_color"
+                )
+                
+                bar_border_width = st.slider(
+                    "Толщина границ столбцов",
+                    min_value=0.5,
+                    max_value=3.0,
+                    value=1.0,
+                    step=0.5,
+                    key="bar_border_width"
+                )
         
-        show_grid = st.checkbox(
-            "Показать сетку",
-            value=True,
-            key="show_grid"
-        )
+        with st.expander("🌀 Настройки сглаживания", expanded=False):
+            smooth_sigma = st.slider(
+                "Сила сглаживания",
+                min_value=0.5,
+                max_value=5.0,
+                value=2.0,
+                step=0.5,
+                key="smooth_sigma"
+            )
+            
+            smooth_zero_baseline = st.checkbox(
+                "Сглаженные графики от нуля",
+                value=False,
+                key="smooth_zero_baseline"
+            )
+            
+            auto_scale_y = st.checkbox(
+                "Автоматический масштаб по Y",
+                value=False,
+                key="auto_scale_y"
+            )
         
-        line_width = st.slider(
-            "Толщина линии",
-            min_value=0.5,
-            max_value=5.0,
-            value=2.0,
-            step=0.5,
-            key="line_width"
-        )
+        with st.expander("📐 Настройки нормировки", expanded=False):
+            normalization_type = st.selectbox(
+                "Тип нормировки",
+                options=['Без нормировки', 'Нормировка по общему максимуму', 'Нормировка по максимуму в наборе'],
+                index=0,
+                key="normalization_type"
+            )
         
-        marker_size = st.slider(
-            "Размер маркеров",
-            min_value=10,
-            max_value=100,
-            value=50,
-            step=5,
-            key="marker_size"
-        )
+        with st.expander("⬆️ Настройки смещения", expanded=False):
+            shift_offset = st.slider(
+                "Величина смещения",
+                min_value=0.0,
+                max_value=3.0,
+                value=1.2,
+                step=0.1,
+                key="shift_offset"
+            )
         
-        axis_width = st.slider(
-            "Толщина осей",
-            min_value=0.5,
-            max_value=3.0,
-            value=1.5,
-            step=0.5,
-            key="axis_width"
-        )
-        
-        font_size = st.slider(
-            "Размер шрифта заголовков",
-            min_value=10,
-            max_value=24,
-            value=14,
-            step=2,
-            key="font_size"
-        )
-        
-        x_label = st.text_input(
-            "Название оси X",
-            value="Ось X",
-            key="x_label"
-        )
-        
-        y_label = st.text_input(
-            "Название оси Y",
-            value="Ось Y",
-            key="y_label"
-        )
-        
-        graph_title = st.text_input(
-            "Заголовок графиков",
-            value="Анализ данных",
-            key="graph_title"
-        )
-        
-        st.markdown("---")
-        st.header("📏 Настройки столбчатых диаграмм")
-        
-        bar_width = st.slider(
-            "Ширина столбцов",
-            min_value=0.1,
-            max_value=2.0,
-            value=0.8,
-            step=0.1,
-            key="bar_width"
-        )
-        
-        bar_alpha = st.slider(
-            "Прозрачность столбцов",
-            min_value=0.1,
-            max_value=1.0,
-            value=0.7,
-            step=0.1,
-            key="bar_alpha"
-        )
-        
-        show_bar_border = st.checkbox(
-            "Показать границы столбцов",
-            value=True,
-            key="show_bar_border"
-        )
-        
-        bar_border_color = st.color_picker(
-            "Цвет границ столбцов",
-            value="#000000",
-            key="bar_border_color"
-        )
-        
-        bar_border_width = st.slider(
-            "Толщина границ столбцов",
-            min_value=0.5,
-            max_value=3.0,
-            value=1.0,
-            step=0.5,
-            key="bar_border_width"
-        )
-        
-        st.markdown("---")
-        st.header("🌀 Настройки сглаживания")
-        
-        smooth_sigma = st.slider(
-            "Сила сглаживания",
-            min_value=0.5,
-            max_value=5.0,
-            value=2.0,
-            step=0.5,
-            key="smooth_sigma"
-        )
-        
-        smooth_zero_baseline = st.checkbox(
-            "Сглаженные графики от нуля",
-            value=False,
-            key="smooth_zero_baseline"
-        )
-        
-        auto_scale_y = st.checkbox(
-            "Автоматический масштаб по Y для сглаженных графиков",
-            value=False,
-            key="auto_scale_y"
-        )
-        
-        st.markdown("---")
-        st.header("📐 Настройки нормировки")
-        
-        normalization_type = st.selectbox(
-            "Тип нормировки",
-            options=['Без нормировки', 'Нормировка по общему максимуму', 'Нормировка по максимуму в наборе'],
-            index=0,
-            key="normalization_type"
-        )
-        
-        st.markdown("---")
-        st.header("⬆️ Настройки смещения")
-        
-        shift_offset = st.slider(
-            "Смещение наборов",
-            min_value=0.0,
-            max_value=3.0,
-            value=1.2,
-            step=0.1,
-            key="shift_offset"
-        )
-        
-        st.markdown("---")
-        st.header("🎯 Настройка диапазонов")
-        
-        manual_range = st.checkbox(
-            "Ручная настройка диапазонов",
-            value=False,
-            key="manual_range"
-        )
-        
-        if manual_range:
-            col1, col2 = st.columns(2)
-            with col1:
-                x_min = st.number_input("X мин", value=0.0, key="x_min")
-                y_min = st.number_input("Y мин", value=0.0, key="y_min")
-            with col2:
-                x_max = st.number_input("X макс", value=0.0, key="x_max")
-                y_max = st.number_input("Y макс", value=0.0, key="y_max")
+        with st.expander("🎯 Настройка диапазонов", expanded=False):
+            manual_range = st.checkbox(
+                "Ручная настройка диапазонов",
+                value=False,
+                key="manual_range"
+            )
+            
+            if manual_range:
+                column1, column2 = st.columns(2)
+                with column1:
+                    x_minimum = st.number_input("X минимальное", value=0.0, key="x_minimum")
+                    y_minimum = st.number_input("Y минимальное", value=0.0, key="y_minimum")
+                with column2:
+                    x_maximum = st.number_input("X максимальное", value=0.0, key="x_maximum")
+                    y_maximum = st.number_input("Y максимальное", value=0.0, key="y_maximum")
     
     # Основная область с вводом данных
     st.header("📝 Ввод данных")
     
     # Создаем табы для каждого набора данных
-    tabs = st.tabs([f"Набор {i+1}" for i in range(num_datasets)])
+    tabs = st.tabs([f"Набор {i+1}" for i in range(number_of_datasets)])
     
-    for i, tab in enumerate(tabs):
+    for index, tab in enumerate(tabs):
         with tab:
-            col1, col2, col3, col4 = st.columns(4)
+            column1, column2, column3, column4 = st.columns(4)
             
-            with col1:
+            with column1:
                 # Имя набора
                 dataset_name = st.text_input(
-                    f"Имя набора {i+1}",
-                    value=st.session_state.dataset_names[i],
-                    key=f"dataset_name_{i}"
+                    f"Имя набора {index+1}",
+                    value=st.session_state.dataset_names[index],
+                    key=f"dataset_name_{index}"
                 )
-                st.session_state.dataset_names[i] = dataset_name
+                st.session_state.dataset_names[index] = dataset_name
             
-            with col2:
-                # Цвет - используем фиксированный ключ
+            with column2:
+                # Цвет
                 color = st.color_picker(
-                    f"Цвет {i+1}",
-                    value=st.session_state.dataset_colors[i],
-                    key=f"color_{i}"
+                    f"Цвет {index+1}",
+                    value=st.session_state.dataset_colors[index],
+                    key=f"color_{index}"
                 )
-                st.session_state.dataset_colors[i] = color
+                st.session_state.dataset_colors[index] = color
             
-            with col3:
+            with column3:
                 # Стиль линии
                 line_style = st.selectbox(
-                    f"Стиль линии {i+1}",
+                    f"Стиль линии {index+1}",
                     options=['solid', 'dashed', 'dotted', 'dashdot'],
-                    index=['solid', 'dashed', 'dotted', 'dashdot'].index(st.session_state.line_styles[i]),
-                    key=f"line_style_{i}"
+                    index=['solid', 'dashed', 'dotted', 'dashdot'].index(st.session_state.line_styles[index]),
+                    key=f"line_style_{index}"
                 )
-                st.session_state.line_styles[i] = line_style
+                st.session_state.line_styles[index] = line_style
             
-            with col4:
+            with column4:
                 # Маркер
                 marker_options = {
                     'none': 'Нет маркера',
@@ -543,28 +557,28 @@ def main():
                 marker_keys = list(marker_options.keys())
                 marker_labels = list(marker_options.values())
                 
-                current_marker = st.session_state.marker_styles[i]
+                current_marker = st.session_state.marker_styles[index]
                 current_index = marker_keys.index(current_marker) if current_marker in marker_keys else 0
                 
                 marker_style_label = st.selectbox(
-                    f"Маркер {i+1}",
+                    f"Маркер {index+1}",
                     options=marker_labels,
                     index=current_index,
-                    key=f"marker_style_{i}"
+                    key=f"marker_style_{index}"
                 )
                 
                 selected_index = marker_labels.index(marker_style_label)
-                st.session_state.marker_styles[i] = marker_keys[selected_index]
+                st.session_state.marker_styles[index] = marker_keys[selected_index]
             
             # Поле для ввода данных
             data_text = st.text_area(
-                f"Данные набора {i+1} (формат: X Y в каждой строке)",
-                value=st.session_state.datasets_data[i],
+                f"Данные набора {index+1}",
+                value=st.session_state.datasets_data[index],
                 height=150,
-                key=f"data_text_{i}",
-                placeholder="Введите данные в формате:\n10.0 20.5\n15.0 30.2\n20.0 25.7\n\nИли:\n10.0\t20.5\n15.0\t30.2\n20.0\t25.7"
+                key=f"data_text_{index}",
+                placeholder="Введите данные в формате X Y:\n10.0 20.5\n15.0 30.2\n20.0 25.7\n\nИли с другими разделителями:\n10.0\t20.5\n15.0\t30.2\n20.0\t25.7"
             )
-            st.session_state.datasets_data[i] = data_text
+            st.session_state.datasets_data[index] = data_text
     
     # Кнопка для обновления графиков
     if st.button("🔄 Обновить графики", type="primary", use_container_width=True):
@@ -579,67 +593,67 @@ def main():
     all_line_styles = []
     all_marker_styles = []
     
-    for i in range(num_datasets):
-        data_text = st.session_state.datasets_data[i]
-        x_vals, y_vals = parse_data(data_text)
+    for index in range(number_of_datasets):
+        data_text = st.session_state.datasets_data[index]
+        x_values, y_values = parse_data(data_text)
         
-        if len(x_vals) > 0 and len(y_vals) > 0:
-            all_datasets.append((x_vals, y_vals))
-            all_names.append(st.session_state.dataset_names[i])
-            all_colors.append(st.session_state.dataset_colors[i])
-            all_line_styles.append(st.session_state.line_styles[i])
-            all_marker_styles.append(st.session_state.marker_styles[i])
+        if len(x_values) > 0 and len(y_values) > 0:
+            all_datasets.append((x_values, y_values))
+            all_names.append(st.session_state.dataset_names[index])
+            all_colors.append(st.session_state.dataset_colors[index])
+            all_line_styles.append(st.session_state.line_styles[index])
+            all_marker_styles.append(st.session_state.marker_styles[index])
     
     if not all_datasets:
         st.warning("❌ Нет данных для построения графиков. Пожалуйста, введите данные.")
         return
     
     # Получаем нормированные и смещенные данные
-    norm_datasets = normalize_data(all_datasets, normalization_type)
+    normalized_datasets = normalize_data(all_datasets, normalization_type)
     shifted_datasets_with_base = create_shifted_datasets(all_datasets, shift_offset)
     
     # Разделяем смещенные данные на данные и базовые линии
-    shifted_datasets = [(x_vals, y_vals) for x_vals, y_vals, _ in shifted_datasets_with_base]
+    shifted_datasets = [(x_values, y_values) for x_values, y_values, _ in shifted_datasets_with_base]
     base_lines = [base_line for _, _, base_line in shifted_datasets_with_base]
     
     # Определяем общий диапазон X
     all_x_values = []
-    for x_vals, y_vals in all_datasets:
-        if len(x_vals) > 0:
-            all_x_values.extend(x_vals)
+    for x_values, y_values in all_datasets:
+        if len(x_values) > 0:
+            all_x_values.extend(x_values)
     
     if len(all_x_values) > 0:
-        if manual_range and st.session_state.get('x_min', 0) != st.session_state.get('x_max', 0):
-            x_min = st.session_state.x_min
-            x_max = st.session_state.x_max
+        if manual_range and st.session_state.get('x_minimum', 0) != st.session_state.get('x_maximum', 0):
+            x_minimum = st.session_state.x_minimum
+            x_maximum = st.session_state.x_maximum
         else:
             x_range = max(all_x_values) - min(all_x_values)
-            x_min = min(all_x_values) - 0.1 * x_range
-            x_max = max(all_x_values) + 0.1 * x_range
+            x_minimum = min(all_x_values) - 0.1 * x_range
+            x_maximum = max(all_x_values) + 0.1 * x_range
     else:
-        x_min, x_max = 0, 1
+        x_minimum, x_maximum = 0, 1
     
     # Находим общий максимум для нормировки
-    global_max = 0
+    global_maximum = 0
     if normalization_type == 'Нормировка по общему максимуму':
-        for x_vals, y_vals in all_datasets:
-            if len(y_vals) > 0:
-                dataset_max = np.max(y_vals)
-                if dataset_max > global_max:
-                    global_max = dataset_max
+        for x_values, y_values in all_datasets:
+            if len(y_values) > 0:
+                dataset_maximum = np.max(y_values)
+                if dataset_maximum > global_maximum:
+                    global_maximum = dataset_maximum
     
     # Создаем графики
     st.header("📈 Графики")
     
     # Создаем 6 графиков
-    fig1, ax1 = plt.subplots(figsize=(10, 6))
-    fig2, ax2 = plt.subplots(figsize=(10, 6))
-    fig3, ax3 = plt.subplots(figsize=(10, 6))
-    fig4, ax4 = plt.subplots(figsize=(10, 6))
-    fig5, ax5 = plt.subplots(figsize=(10, 6))
-    fig6, ax6 = plt.subplots(figsize=(10, 6))
+    figure1, axis1 = plt.subplots(figsize=(10, 6))
+    figure2, axis2 = plt.subplots(figsize=(10, 6))
+    figure3, axis3 = plt.subplots(figsize=(10, 6))
+    figure4, axis4 = plt.subplots(figsize=(10, 6))
+    figure5, axis5 = plt.subplots(figsize=(10, 6))
+    figure6, axis6 = plt.subplots(figsize=(10, 6))
     
-    axes = [ax1, ax2, ax3, ax4, ax5, ax6]
+    axes = [axis1, axis2, axis3, axis4, axis5, axis6]
     titles = [
         'Столбчатая диаграмма X-Y',
         'Сглаженный график с заливкой',
@@ -650,282 +664,282 @@ def main():
     ]
     
     # Установка фона для всех графиков
-    for ax in axes:
-        ax.set_facecolor(fill_color)
+    for axis in axes:
+        axis.set_facecolor(fill_color)
     
     # График 1: Столбчатая диаграмма X-Y
-    for idx, (x_vals, y_vals) in enumerate(all_datasets):
-        if len(x_vals) > 0 and len(y_vals) > 0:
-            sorted_indices = np.argsort(x_vals)
-            x_sorted = x_vals[sorted_indices]
-            y_sorted = y_vals[sorted_indices]
+    for idx, (x_values, y_values) in enumerate(all_datasets):
+        if len(x_values) > 0 and len(y_values) > 0:
+            sorted_indices = np.argsort(x_values)
+            x_sorted = x_values[sorted_indices]
+            y_sorted = y_values[sorted_indices]
             
             if len(x_sorted) > 1:
                 width = (x_sorted[-1] - x_sorted[0]) / (len(x_sorted) * 1.5) * bar_width
             else:
                 width = bar_width
             
-            edgecolor = bar_border_color if show_bar_border else 'none'
-            linewidth = bar_border_width if show_bar_border else 0
+            edge_color = bar_border_color if show_bar_border else 'none'
+            line_width_value = bar_border_width if show_bar_border else 0
             
-            ax1.bar(x_sorted, y_sorted, 
-                   width=width,
-                   alpha=bar_alpha, 
-                   color=all_colors[idx],
-                   edgecolor=edgecolor, 
-                   linewidth=linewidth,
-                   label=all_names[idx])
+            axis1.bar(x_sorted, y_sorted, 
+                     width=width,
+                     alpha=bar_alpha, 
+                     color=all_colors[idx],
+                     edgecolor=edge_color, 
+                     linewidth=line_width_value,
+                     label=all_names[idx])
     
-    y_min_1, y_max_1 = get_y_range(all_datasets, is_bar_chart=True)
-    if manual_range and st.session_state.get('y_min', 0) != st.session_state.get('y_max', 0):
-        ax1.set_ylim(st.session_state.y_min, st.session_state.y_max)
+    y_minimum_1, y_maximum_1 = get_y_range(all_datasets, is_bar_chart=True)
+    if manual_range and st.session_state.get('y_minimum', 0) != st.session_state.get('y_maximum', 0):
+        axis1.set_ylim(st.session_state.y_minimum, st.session_state.y_maximum)
     else:
-        ax1.set_ylim(y_min_1, y_max_1)
+        axis1.set_ylim(y_minimum_1, y_maximum_1)
     
-    ax1.set_xlabel(x_label, fontsize=font_size)
-    ax1.set_ylabel(y_label, fontsize=font_size)
-    ax1.set_title(titles[0], fontsize=font_size + 2, pad=20)
-    ax1.set_xlim(x_min, x_max)
+    axis1.set_xlabel(x_label, fontsize=font_size)
+    axis1.set_ylabel(y_label, fontsize=font_size)
+    axis1.set_title(titles[0], fontsize=font_size + 2, pad=20)
+    axis1.set_xlim(x_minimum, x_maximum)
     if len(all_datasets) > 1:
-        ax1.legend(fontsize=font_size - 2, loc='best')
+        axis1.legend(fontsize=font_size - 2, loc='best')
     
     # График 2: Сглаженный график с заливкой
-    for idx, (x_vals, y_vals) in enumerate(all_datasets):
-        if len(x_vals) >= 2 and len(y_vals) >= 2:
+    for idx, (x_values, y_values) in enumerate(all_datasets):
+        if len(x_values) >= 2 and len(y_values) >= 2:
             if smooth_zero_baseline:
                 x_sorted, y_sorted, x_smooth, y_smooth = prepare_smooth_data_with_zero_baseline(
-                    x_vals, y_vals, smooth_sigma)
+                    x_values, y_values, smooth_sigma)
             else:
                 x_sorted, y_sorted, x_smooth, y_smooth = prepare_smooth_data(
-                    x_vals, y_vals, smooth_sigma)
+                    x_values, y_values, smooth_sigma)
             
             if len(x_smooth) > 0 and len(y_smooth) > 0:
-                ax2.plot(x_smooth, y_smooth,
-                        linewidth=line_width + 1,
-                        color=all_colors[idx],
-                        linestyle=all_line_styles[idx],
-                        alpha=0.9,
-                        label=all_names[idx])
+                axis2.plot(x_smooth, y_smooth,
+                          linewidth=line_width + 1,
+                          color=all_colors[idx],
+                          linestyle=all_line_styles[idx],
+                          alpha=0.9,
+                          label=all_names[idx])
                 
-                ax2.fill_between(x_smooth, y_smooth, alpha=0.2, color=all_colors[idx])
+                axis2.fill_between(x_smooth, y_smooth, alpha=0.2, color=all_colors[idx])
                 
                 if all_marker_styles[idx] != 'none':
-                    ax2.scatter(x_sorted, y_sorted,
-                              s=marker_size,
-                              c=all_colors[idx],
-                              marker=all_marker_styles[idx],
-                              alpha=0.7,
-                              edgecolors='k',
-                              linewidths=0.5,
-                              zorder=5)
+                    axis2.scatter(x_sorted, y_sorted,
+                                s=marker_size,
+                                c=all_colors[idx],
+                                marker=all_marker_styles[idx],
+                                alpha=0.7,
+                                edgecolors='k',
+                                linewidths=0.5,
+                                zorder=5)
     
-    y_min_2, y_max_2 = get_y_range(all_datasets, smooth_zero_baseline, auto_scale=not auto_scale_y)
-    if manual_range and st.session_state.get('y_min', 0) != st.session_state.get('y_max', 0):
-        ax2.set_ylim(st.session_state.y_min, st.session_state.y_max)
+    y_minimum_2, y_maximum_2 = get_y_range(all_datasets, smooth_zero_baseline, auto_scale=not auto_scale_y)
+    if manual_range and st.session_state.get('y_minimum', 0) != st.session_state.get('y_maximum', 0):
+        axis2.set_ylim(st.session_state.y_minimum, st.session_state.y_maximum)
     else:
         if not auto_scale_y:
-            ax2.set_ylim(y_min_2, y_max_2)
+            axis2.set_ylim(y_minimum_2, y_maximum_2)
         else:
-            if y_min_2 > 0 and y_min_2 < 0.1 * y_max_2:
-                ax2.set_ylim(0, y_max_2 * 1.1)
+            if y_minimum_2 > 0 and y_minimum_2 < 0.1 * y_maximum_2:
+                axis2.set_ylim(0, y_maximum_2 * 1.1)
             else:
-                ax2.set_ylim(y_min_2, y_max_2)
+                axis2.set_ylim(y_minimum_2, y_maximum_2)
     
-    ax2.set_xlabel(x_label, fontsize=font_size)
-    ax2.set_ylabel(y_label, fontsize=font_size)
-    ax2.set_title(titles[1], fontsize=font_size + 2, pad=20)
-    ax2.set_xlim(x_min, x_max)
+    axis2.set_xlabel(x_label, fontsize=font_size)
+    axis2.set_ylabel(y_label, fontsize=font_size)
+    axis2.set_title(titles[1], fontsize=font_size + 2, pad=20)
+    axis2.set_xlim(x_minimum, x_maximum)
     if len(all_datasets) > 0:
-        ax2.legend(fontsize=font_size - 2, loc='best')
+        axis2.legend(fontsize=font_size - 2, loc='best')
     
     # График 3: Нормированная столбчатая диаграмма
-    for idx, (x_vals, y_vals) in enumerate(norm_datasets):
-        if len(x_vals) > 0 and len(y_vals) > 0:
-            sorted_indices = np.argsort(x_vals)
-            x_sorted = x_vals[sorted_indices]
-            y_sorted = y_vals[sorted_indices]
+    for idx, (x_values, y_values) in enumerate(normalized_datasets):
+        if len(x_values) > 0 and len(y_values) > 0:
+            sorted_indices = np.argsort(x_values)
+            x_sorted = x_values[sorted_indices]
+            y_sorted = y_values[sorted_indices]
             
             if len(x_sorted) > 1:
                 width = (x_sorted[-1] - x_sorted[0]) / (len(x_sorted) * 1.5) * bar_width
             else:
                 width = bar_width
             
-            edgecolor = bar_border_color if show_bar_border else 'none'
-            linewidth = bar_border_width if show_bar_border else 0
+            edge_color = bar_border_color if show_bar_border else 'none'
+            line_width_value = bar_border_width if show_bar_border else 0
             
-            ax3.bar(x_sorted, y_sorted, 
-                   width=width,
-                   alpha=bar_alpha, 
-                   color=all_colors[idx],
-                   edgecolor=edgecolor, 
-                   linewidth=linewidth,
-                   label=all_names[idx])
+            axis3.bar(x_sorted, y_sorted, 
+                     width=width,
+                     alpha=bar_alpha, 
+                     color=all_colors[idx],
+                     edgecolor=edge_color, 
+                     linewidth=line_width_value,
+                     label=all_names[idx])
     
-    y_min_3, y_max_3 = get_y_range(norm_datasets, is_bar_chart=True)
-    if manual_range and st.session_state.get('y_min', 0) != st.session_state.get('y_max', 0):
-        ax3.set_ylim(st.session_state.y_min, st.session_state.y_max)
+    y_minimum_3, y_maximum_3 = get_y_range(normalized_datasets, is_bar_chart=True)
+    if manual_range and st.session_state.get('y_minimum', 0) != st.session_state.get('y_maximum', 0):
+        axis3.set_ylim(st.session_state.y_minimum, st.session_state.y_maximum)
     elif normalization_type != 'Без нормировки':
-        ax3.set_ylim(0, 1.2)
+        axis3.set_ylim(0, 1.2)
     else:
-        ax3.set_ylim(y_min_3, y_max_3)
+        axis3.set_ylim(y_minimum_3, y_maximum_3)
     
-    ax3.set_xlabel(x_label, fontsize=font_size)
-    ax3.set_ylabel('Нормированная ' + y_label, fontsize=font_size)
-    ax3.set_title(titles[2], fontsize=font_size + 2, pad=20)
-    ax3.set_xlim(x_min, x_max)
-    if len(norm_datasets) > 1:
-        ax3.legend(fontsize=font_size - 2, loc='best')
+    axis3.set_xlabel(x_label, fontsize=font_size)
+    axis3.set_ylabel('Нормированная ' + y_label, fontsize=font_size)
+    axis3.set_title(titles[2], fontsize=font_size + 2, pad=20)
+    axis3.set_xlim(x_minimum, x_maximum)
+    if len(normalized_datasets) > 1:
+        axis3.legend(fontsize=font_size - 2, loc='best')
     
     # График 4: Нормированный сглаженный график
-    for idx, (x_vals, y_vals) in enumerate(all_datasets):
-        if len(x_vals) >= 2 and len(y_vals) >= 2:
-            x_sorted, y_sorted_norm, x_smooth, y_smooth_norm = prepare_normalized_smooth_data(
-                x_vals, y_vals, smooth_sigma, normalization_type, global_max)
+    for idx, (x_values, y_values) in enumerate(all_datasets):
+        if len(x_values) >= 2 and len(y_values) >= 2:
+            x_sorted, y_sorted_normalized, x_smooth, y_smooth_normalized = prepare_normalized_smooth_data(
+                x_values, y_values, smooth_sigma, normalization_type, global_maximum)
             
-            if len(x_smooth) > 0 and len(y_smooth_norm) > 0:
-                ax4.plot(x_smooth, y_smooth_norm,
-                        linewidth=line_width + 1,
-                        color=all_colors[idx],
-                        linestyle=all_line_styles[idx],
-                        alpha=0.9,
-                        label=all_names[idx])
+            if len(x_smooth) > 0 and len(y_smooth_normalized) > 0:
+                axis4.plot(x_smooth, y_smooth_normalized,
+                          linewidth=line_width + 1,
+                          color=all_colors[idx],
+                          linestyle=all_line_styles[idx],
+                          alpha=0.9,
+                          label=all_names[idx])
                 
-                ax4.fill_between(x_smooth, 0, y_smooth_norm, alpha=0.2, color=all_colors[idx])
+                axis4.fill_between(x_smooth, 0, y_smooth_normalized, alpha=0.2, color=all_colors[idx])
                 
                 if all_marker_styles[idx] != 'none' and len(x_sorted) > 0:
-                    ax4.scatter(x_sorted, y_sorted_norm,
-                              s=marker_size,
-                              c=all_colors[idx],
-                              marker=all_marker_styles[idx],
-                              alpha=0.7,
-                              edgecolors='k',
-                              linewidths=0.5,
-                              zorder=5)
+                    axis4.scatter(x_sorted, y_sorted_normalized,
+                                s=marker_size,
+                                c=all_colors[idx],
+                                marker=all_marker_styles[idx],
+                                alpha=0.7,
+                                edgecolors='k',
+                                linewidths=0.5,
+                                zorder=5)
     
     if normalization_type != 'Без нормировки':
-        y_min_4, y_max_4 = 0, 1.2
+        y_minimum_4, y_maximum_4 = 0, 1.2
     else:
-        y_min_4, y_max_4 = get_y_range(norm_datasets, smooth_zero_baseline, auto_scale=not auto_scale_y)
+        y_minimum_4, y_maximum_4 = get_y_range(normalized_datasets, smooth_zero_baseline, auto_scale=not auto_scale_y)
     
-    if manual_range and st.session_state.get('y_min', 0) != st.session_state.get('y_max', 0):
-        ax4.set_ylim(st.session_state.y_min, st.session_state.y_max)
+    if manual_range and st.session_state.get('y_minimum', 0) != st.session_state.get('y_maximum', 0):
+        axis4.set_ylim(st.session_state.y_minimum, st.session_state.y_maximum)
     else:
-        ax4.set_ylim(y_min_4, y_max_4)
+        axis4.set_ylim(y_minimum_4, y_maximum_4)
     
-    ax4.set_xlabel(x_label, fontsize=font_size)
-    ax4.set_ylabel('Нормированное значение', fontsize=font_size)
-    ax4.set_title(titles[3], fontsize=font_size + 2, pad=20)
-    ax4.set_xlim(x_min, x_max)
+    axis4.set_xlabel(x_label, fontsize=font_size)
+    axis4.set_ylabel('Нормированное значение', fontsize=font_size)
+    axis4.set_title(titles[3], fontsize=font_size + 2, pad=20)
+    axis4.set_xlim(x_minimum, x_maximum)
     if len(all_datasets) > 0:
-        ax4.legend(fontsize=font_size - 2, loc='best')
+        axis4.legend(fontsize=font_size - 2, loc='best')
     
     # График 5: Смещенные нормированные столбцы
-    for idx, (x_vals, y_vals) in enumerate(shifted_datasets):
-        if len(x_vals) > 0 and len(y_vals) > 0:
-            sorted_indices = np.argsort(x_vals)
-            x_sorted = x_vals[sorted_indices]
-            y_sorted = y_vals[sorted_indices]
+    for idx, (x_values, y_values) in enumerate(shifted_datasets):
+        if len(x_values) > 0 and len(y_values) > 0:
+            sorted_indices = np.argsort(x_values)
+            x_sorted = x_values[sorted_indices]
+            y_sorted = y_values[sorted_indices]
             
             if len(x_sorted) > 1:
                 width = (x_sorted[-1] - x_sorted[0]) / (len(x_sorted) * 1.5) * bar_width
             else:
                 width = bar_width
             
-            edgecolor = bar_border_color if show_bar_border else 'none'
-            linewidth = bar_border_width if show_bar_border else 0
+            edge_color = bar_border_color if show_bar_border else 'none'
+            line_width_value = bar_border_width if show_bar_border else 0
             
-            ax5.bar(x_sorted, y_sorted - base_lines[idx], 
-                   width=width,
-                   bottom=base_lines[idx],
-                   alpha=bar_alpha, 
-                   color=all_colors[idx],
-                   edgecolor=edgecolor, 
-                   linewidth=linewidth,
-                   label=all_names[idx])
+            axis5.bar(x_sorted, y_sorted - base_lines[idx], 
+                     width=width,
+                     bottom=base_lines[idx],
+                     alpha=bar_alpha, 
+                     color=all_colors[idx],
+                     edgecolor=edge_color, 
+                     linewidth=line_width_value,
+                     label=all_names[idx])
             
-            ax5.axhline(y=base_lines[idx], color=all_colors[idx], linestyle='--', alpha=0.5, linewidth=1)
+            axis5.axhline(y=base_lines[idx], color=all_colors[idx], linestyle='--', alpha=0.5, linewidth=1)
     
-    y_min_5, y_max_5 = get_y_range(shifted_datasets, is_bar_chart=False)
-    if manual_range and st.session_state.get('y_min', 0) != st.session_state.get('y_max', 0):
-        ax5.set_ylim(st.session_state.y_min, st.session_state.y_max)
+    y_minimum_5, y_maximum_5 = get_y_range(shifted_datasets, is_bar_chart=False)
+    if manual_range and st.session_state.get('y_minimum', 0) != st.session_state.get('y_maximum', 0):
+        axis5.set_ylim(st.session_state.y_minimum, st.session_state.y_maximum)
     else:
-        ax5.set_ylim(y_min_5, y_max_5)
+        axis5.set_ylim(y_minimum_5, y_maximum_5)
     
-    ax5.set_xlabel(x_label, fontsize=font_size)
-    ax5.set_ylabel('Смещенные нормированные значения', fontsize=font_size)
-    ax5.set_title(titles[4], fontsize=font_size + 2, pad=20)
-    ax5.set_xlim(x_min, x_max)
+    axis5.set_xlabel(x_label, fontsize=font_size)
+    axis5.set_ylabel('Смещенные нормированные значения', fontsize=font_size)
+    axis5.set_title(titles[4], fontsize=font_size + 2, pad=20)
+    axis5.set_xlim(x_minimum, x_maximum)
     if len(shifted_datasets) > 0:
-        ax5.legend(fontsize=font_size - 2, loc='best')
+        axis5.legend(fontsize=font_size - 2, loc='best')
     
     # График 6: Смещенные нормированные кривые
-    for idx, (x_vals, y_vals) in enumerate(all_datasets):
-        if len(x_vals) >= 2 and len(y_vals) >= 2:
-            x_sorted, y_sorted_norm, x_smooth, y_smooth_norm = prepare_normalized_smooth_data(
-                x_vals, y_vals, smooth_sigma, 'Нормировка по максимуму в наборе')
+    for idx, (x_values, y_values) in enumerate(all_datasets):
+        if len(x_values) >= 2 and len(y_values) >= 2:
+            x_sorted, y_sorted_normalized, x_smooth, y_smooth_normalized = prepare_normalized_smooth_data(
+                x_values, y_values, smooth_sigma, 'Нормировка по максимуму в наборе')
             
-            if len(x_smooth) > 0 and len(y_smooth_norm) > 0:
-                y_smooth_shifted = y_smooth_norm + base_lines[idx]
+            if len(x_smooth) > 0 and len(y_smooth_normalized) > 0:
+                y_smooth_shifted = y_smooth_normalized + base_lines[idx]
                 
-                ax6.plot(x_smooth, y_smooth_shifted,
-                        linewidth=line_width + 1,
-                        color=all_colors[idx],
-                        linestyle=all_line_styles[idx],
-                        alpha=0.9,
-                        label=all_names[idx])
+                axis6.plot(x_smooth, y_smooth_shifted,
+                          linewidth=line_width + 1,
+                          color=all_colors[idx],
+                          linestyle=all_line_styles[idx],
+                          alpha=0.9,
+                          label=all_names[idx])
                 
-                ax6.fill_between(x_smooth, base_lines[idx], y_smooth_shifted, alpha=0.2, color=all_colors[idx])
+                axis6.fill_between(x_smooth, base_lines[idx], y_smooth_shifted, alpha=0.2, color=all_colors[idx])
                 
-                ax6.axhline(y=base_lines[idx], color=all_colors[idx], linestyle='--', alpha=0.5, linewidth=1)
+                axis6.axhline(y=base_lines[idx], color=all_colors[idx], linestyle='--', alpha=0.5, linewidth=1)
                 
                 if all_marker_styles[idx] != 'none' and len(x_sorted) > 0:
-                    y_markers_shifted = y_sorted_norm + base_lines[idx]
-                    ax6.scatter(x_sorted, y_markers_shifted,
-                              s=marker_size,
-                              c=all_colors[idx],
-                              marker=all_marker_styles[idx],
-                              alpha=0.7,
-                              edgecolors='k',
-                              linewidths=0.5,
-                              zorder=5)
+                    y_markers_shifted = y_sorted_normalized + base_lines[idx]
+                    axis6.scatter(x_sorted, y_markers_shifted,
+                                s=marker_size,
+                                c=all_colors[idx],
+                                marker=all_marker_styles[idx],
+                                alpha=0.7,
+                                edgecolors='k',
+                                linewidths=0.5,
+                                zorder=5)
     
-    y_min_6, y_max_6 = get_y_range(shifted_datasets, smooth_zero_baseline)
-    if manual_range and st.session_state.get('y_min', 0) != st.session_state.get('y_max', 0):
-        ax6.set_ylim(st.session_state.y_min, st.session_state.y_max)
+    y_minimum_6, y_maximum_6 = get_y_range(shifted_datasets, smooth_zero_baseline)
+    if manual_range and st.session_state.get('y_minimum', 0) != st.session_state.get('y_maximum', 0):
+        axis6.set_ylim(st.session_state.y_minimum, st.session_state.y_maximum)
     else:
-        ax6.set_ylim(y_min_6, y_max_6)
+        axis6.set_ylim(y_minimum_6, y_maximum_6)
     
-    ax6.set_xlabel(x_label, fontsize=font_size)
-    ax6.set_ylabel('Смещенные нормированные значения', fontsize=font_size)
-    ax6.set_title(titles[5], fontsize=font_size + 2, pad=20)
-    ax6.set_xlim(x_min, x_max)
+    axis6.set_xlabel(x_label, fontsize=font_size)
+    axis6.set_ylabel('Смещенные нормированные значения', fontsize=font_size)
+    axis6.set_title(titles[5], fontsize=font_size + 2, pad=20)
+    axis6.set_xlim(x_minimum, x_maximum)
     if len(all_datasets) > 0:
-        ax6.legend(fontsize=font_size - 2, loc='best')
+        axis6.legend(fontsize=font_size - 2, loc='best')
     
     # Общие настройки для всех графиков
-    for ax in axes:
-        for spine in ax.spines.values():
+    for axis in axes:
+        for spine in axis.spines.values():
             spine.set_linewidth(axis_width)
         
         if show_grid:
-            ax.grid(True, alpha=0.3, linestyle='--')
+            axis.grid(True, alpha=0.3, linestyle='--', color=grid_color if show_grid else None, linewidth=grid_width if show_grid else 1)
         else:
-            ax.grid(False)
+            axis.grid(False)
         
-        ax.tick_params(axis='both', which='major', labelsize=font_size - 2)
+        axis.tick_params(axis='both', which='major', labelsize=font_size - 2)
     
     # Отображаем графики в Streamlit
-    cols = st.columns(2)
+    columns = st.columns(2)
     
-    with cols[0]:
-        st.pyplot(fig1)
-        st.pyplot(fig3)
-        st.pyplot(fig5)
+    with columns[0]:
+        st.pyplot(figure1)
+        st.pyplot(figure3)
+        st.pyplot(figure5)
     
-    with cols[1]:
-        st.pyplot(fig2)
-        st.pyplot(fig4)
-        st.pyplot(fig6)
+    with columns[1]:
+        st.pyplot(figure2)
+        st.pyplot(figure4)
+        st.pyplot(figure6)
     
     # Информация о графиках
     with st.expander("📋 Информация о графиках"):
@@ -946,11 +960,16 @@ def main():
         - **Базовые линии**: на смещенных графиках показаны базовые линии каждого набора
         - **Границы столбцов**: можно включать/выключать и настраивать цвет и толщину
         - **Автомасштабирование**: для сглаженных графиков можно отключить автоскейл по Y
+        - **Настройка сетки**: можно изменять цвет и толщину линий сетки
         
         ### Формат ввода данных:
         - Каждая строка должна содержать два числа: X и Y
         - Разделитель: пробел, табуляция или запятая
         - Пример: `10.0 20.5` или `10.0\t20.5` или `10.0, 20.5`
+        
+        ### Важное:
+        - Первый набор данных в смещенных графиках всегда начинается с y = 0
+        - Последующие наборы смещаются на указанную величину
         """)
 
 if __name__ == "__main__":
